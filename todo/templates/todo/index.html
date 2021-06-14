@@ -1,0 +1,8 @@
+<ul style="padding: 0px">
+  {% for todo in todo_list %}
+  <li>
+    <h1>{{todo.body}}</h1>
+    <p>{{todo.last_modified}}</p>
+  </li>
+  {% endfor %}
+</ul>
