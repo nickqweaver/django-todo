@@ -1,5 +1,6 @@
 import graphene
 from todo.models import Todo
+from user.models import User
 from todo.types import TodoType
 
 
@@ -31,6 +32,7 @@ class DeleteTodoMutation(graphene.Mutation):
 class AddTodoMutation(graphene.Mutation):
     class Arguments:
         body = graphene.String(required=True)
+        user = graphene.String(required=True)
 
     success = graphene.Boolean()
     message = graphene.String()
@@ -42,14 +44,21 @@ class AddTodoMutation(graphene.Mutation):
         else:
             return False
 
+    @staticmethod
+    def is_user_found(user):
+        if User.objects.filter(first_name=user):
+            return True
+        else:
+            return False
+
     @classmethod
-    def mutate(cls, self, info, body):
+    def mutate(cls, self, info, body, user):
         try:
             if cls.is_duplicate(body):
                 success = False
                 message = 'There is already a TODO with this body'
             else:
-                todo = Todo(body=body)
+                todo = Todo(body=body, user=user)
                 todo.save()
                 success = True
                 message = "Successfully added TODO"
