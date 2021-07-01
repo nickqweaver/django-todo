@@ -17,9 +17,9 @@ class CreateUserMutation(graphene.Mutation):
             User(first_name=first_name, last_name=last_name, age=age).save()
             success = True
             message = "Successfully created user"
-        except User:
+        except User.ValidationError:
             success = False
-            message = "Error occured"
+            message = "An error occured creating the user"
 
         return CreateUserMutation(success=success, message=message)
 

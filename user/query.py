@@ -7,14 +7,14 @@ from todo.types import TodoType
 class UserQuery(graphene.ObjectType):
     get_user = graphene.Field(UserType, id=graphene.ID(required=True))
     get_users_todos = graphene.List(
-        TodoType, first_name=graphene.String(required=True))
+        TodoType, id=graphene.String(required=True))
 
     def resolve_get_user(self, info, id):
         return User.objects.get(pk=id)
 
-    def resolve_get_users_todos(self, info, first_name):
+    def resolve_get_users_todos(self, info, id):
         try:
-            user = User.objects.get(first_name=first_name)
+            user = User.objects.get(pk=id)
         except User.DoesNotExist:
             return None
 

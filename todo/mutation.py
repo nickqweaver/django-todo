@@ -32,7 +32,7 @@ class DeleteTodoMutation(graphene.Mutation):
 class AddTodoMutation(graphene.Mutation):
     class Arguments:
         body = graphene.String(required=True)
-        user = graphene.String(required=True)
+        userId = graphene.ID(required=True)
 
     success = graphene.Boolean()
     message = graphene.String()
@@ -46,25 +46,28 @@ class AddTodoMutation(graphene.Mutation):
 
     @staticmethod
     def is_user_found(user):
-        if User.objects.filter(first_name=user):
+        if User.objects.filter(pk=user.id):
             return True
         else:
             return False
 
     @classmethod
-    def mutate(cls, self, info, body, user):
+    def mutate(cls, root, info, body, userId):
+        import json
+        print(json.dumps(root))
         try:
             if cls.is_duplicate(body):
                 success = False
                 message = 'There is already a TODO with this body'
             else:
+                user = User.objects.get(pk=userId)
                 todo = Todo(body=body, user=user)
                 todo.save()
                 success = True
                 message = "Successfully added TODO"
-        except Todo:
+        except Todo.ValidationError:
             success = False
-            message = "An Error Occured"
+            message = "Could not create TODO"
 
         return AddTodoMutation(success=success, message=message)
 
