@@ -1,7 +1,7 @@
 import graphene
 from todo.models import Todo
-from user.models import User
 from todo.types import TodoType
+from django.contrib.auth.models import User
 
 
 class DeleteTodoMutation(graphene.Mutation):
