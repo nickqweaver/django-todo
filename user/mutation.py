@@ -1,7 +1,9 @@
 import graphene
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 
-
+## 39228ceee11517acafec4ad5e805ee92888b7560
 class CreateUserMutation(graphene.Mutation):
     class Arguments:
         username = graphene.String(required=True)
@@ -13,7 +15,7 @@ class CreateUserMutation(graphene.Mutation):
     @classmethod
     def mutate(cls, self, info, username, password):
         try:
-            User.objects.create_user(username=username, password=password).save()
+            User.objects.create_user(username=username, password=password)
             success = True
             message = "Successfully created user"
         except User.MultipleObjectsReturned:
@@ -48,7 +50,37 @@ class UpdateContactInfoNameMutation(graphene.Mutation):
         
         return UpdateContactInfoNameMutation(success=success, message=message)
 
+class LoginUserMutation(graphene.Mutation):
+
+    class Arguments:
+        username = graphene.String(required=True)
+        password = graphene.String(required=True)
+
+    token = graphene.String()
+    success = graphene.Boolean()
+    message = graphene.String()
+
+    def mutate(self, info, username, password):
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            login(info.context, user)
+            token, _ = Token.objects.get_or_create(user=user)
+            message = "Successfully logged in"
+            return LoginUserMutation(success=True, message=message, token=token)
+        else:
+            return LoginUserMutation(success=False, message="User could not be Authenticate")
+            
+class LogoutUserMutation(graphene.Mutation):
+    success = graphene.NonNull(graphene.Boolean)
+
+    @staticmethod
+    def mutate(root, info):
+        logout(info.context)
+        return LogoutUserMutation(success=True)
+
 
 class UserMutation(graphene.ObjectType):
     create_user = CreateUserMutation.Field()
     update_contact_info = UpdateContactInfoNameMutation.Field()
+    login_user = LoginUserMutation.Field()
+    logout_user = LogoutUserMutation.Field()
