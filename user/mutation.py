@@ -61,6 +61,8 @@ class LoginUserMutation(graphene.Mutation):
     message = graphene.String()
 
     def mutate(self, info, username, password):
+        ## info argument is the same as request in the view.py api, context exists if it gets passed
+        ## as an argument to the HTTP response
         user = authenticate(username=username, password=password)
         if user is not None:
             login(info.context, user)
@@ -69,7 +71,7 @@ class LoginUserMutation(graphene.Mutation):
             return LoginUserMutation(success=True, message=message, token=token)
         else:
             return LoginUserMutation(success=False, message="User could not be Authenticate")
-            
+
 class LogoutUserMutation(graphene.Mutation):
     success = graphene.NonNull(graphene.Boolean)
 

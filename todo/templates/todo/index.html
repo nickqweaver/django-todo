@@ -1,8 +1,9 @@
 <ul style="padding: 0px">
   {% for todo in todo_list %}
   <li>
-    <h1>{{todo.body}}</h1>
-    <p>{{todo.last_modified}}</p>
+    <h1>TODO: {{todo.body}}</h1>
+    <h3>Author: {{todo.user.first_name}}</h3>
+    <p>Last Modified : {{todo.last_modified}}</p>
   </li>
   {% endfor %}
 </ul>
