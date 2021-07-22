@@ -2,8 +2,14 @@ import graphene
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+import graphene
+import graphql_jwt
+from graphql_jwt.shortcuts import get_token
 
-## 39228ceee11517acafec4ad5e805ee92888b7560
+
+def is_authenticated(user):
+    if user.is_anonymous:
+        raise Exception('You must be logged to vote!')
 class CreateUserMutation(graphene.Mutation):
     class Arguments:
         username = graphene.String(required=True)
@@ -11,23 +17,23 @@ class CreateUserMutation(graphene.Mutation):
 
     success = graphene.Boolean()
     message = graphene.String()
+    token = graphene.String()
 
     @classmethod
     def mutate(cls, self, info, username, password):
         try:
-            User.objects.create_user(username=username, password=password)
+            user = User.objects.create_user(username=username, password=password)
             success = True
             message = "Successfully created user"
+            token = get_token(user)
         except User.MultipleObjectsReturned:
             success = False
             message = "An error occured creating the user"
-
-        return CreateUserMutation(success=success, message=message)
+        return CreateUserMutation(success=success, message=message, token=token)
 
 class UpdateContactInfoNameMutation(graphene.Mutation):
 
     class Arguments:
-        id = graphene.ID(required=True)
         first_name = graphene.String(required=True)
         last_name = graphene.String(required=True)
         email = graphene.String(required=True)
@@ -35,9 +41,12 @@ class UpdateContactInfoNameMutation(graphene.Mutation):
     success = graphene.Boolean()
     message = graphene.String()
 
-    def mutate(self, info, id, first_name, last_name, email):
+    def mutate(self, info, first_name, last_name, email):
+
         try:
-            user = User.objects.get(pk=id)
+            # user = info.user.context Why doesn't it like scoping this to a variable?
+            is_authenticated(info.context.user)
+            user = User.objects.get(pk=info.context.user.id)
             user.first_name = first_name
             user.last_name = last_name
             user.email = email
@@ -49,40 +58,9 @@ class UpdateContactInfoNameMutation(graphene.Mutation):
             message = "An error occured updating user first name"
         
         return UpdateContactInfoNameMutation(success=success, message=message)
-
-class LoginUserMutation(graphene.Mutation):
-
-    class Arguments:
-        username = graphene.String(required=True)
-        password = graphene.String(required=True)
-
-    token = graphene.String()
-    success = graphene.Boolean()
-    message = graphene.String()
-
-    def mutate(self, info, username, password):
-        ## info argument is the same as request in the view.py api, context exists if it gets passed
-        ## as an argument to the HTTP response
-        user = authenticate(username=username, password=password)
-        if user is not None:
-            login(info.context, user)
-            token, _ = Token.objects.get_or_create(user=user)
-            message = "Successfully logged in"
-            return LoginUserMutation(success=True, message=message, token=token)
-        else:
-            return LoginUserMutation(success=False, message="User could not be Authenticate")
-
-class LogoutUserMutation(graphene.Mutation):
-    success = graphene.NonNull(graphene.Boolean)
-
-    @staticmethod
-    def mutate(root, info):
-        logout(info.context)
-        return LogoutUserMutation(success=True)
-
-
 class UserMutation(graphene.ObjectType):
     create_user = CreateUserMutation.Field()
     update_contact_info = UpdateContactInfoNameMutation.Field()
-    login_user = LoginUserMutation.Field()
-    logout_user = LogoutUserMutation.Field()
+    login_user = graphql_jwt.ObtainJSONWebToken.Field()
+    verify_token = graphql_jwt.Verify.Field()
+    refresh_token = graphql_jwt.Refresh.Field()
